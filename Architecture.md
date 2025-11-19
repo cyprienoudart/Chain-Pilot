@@ -1,143 +1,266 @@
-# Architecture & System Design
+# ChainPilot – Detailed Architecture & Implementation Guide
 
-This document provides a detailed overview of the system architecture for **AI Banking Bridge**, including the workflow, components, security layers, and internal interactions.
+This document explains in detail how ChainPilot will be built, the technologies involved, and the step-by-step plan to develop the full platform.
 
 ---
 
-## 🏛️ High-Level Architecture
-The system is composed of four core layers:
+# 🏛️ 1. High-Level Architecture
 
-```
-
+ChainPilot is structured into 4 independent but interconnected modules:
+``` 
 AI Agent
 ↓
-AI Proxy API
+AI Proxy API (Python)
 ↓
-Rule & Risk Engine
+Rule & Risk Engine (Python)
 ↓
-Secure Execution Layer
+Secure Execution Layer (Web3 + MPC wallets)
 ↓
-Banking / Crypto Rail
-
+Blockchain Network (Ethereum, Polygon, etc.)
 ```
+Each layer has a clear responsibility, strong isolation, and strict security boundaries.
 
-### **1. AI Proxy API**
-This is the only interface visible to the agent.
+---
 
-Responsibilities:
-- Receives requests from the AI agent (JSON-based)
-- Validates schema and intent
-- Converts natural-language reasoning into structured actions
-- Applies baseline guardrails to avoid malformed or unsafe requests
+# 🧠 2. AI Proxy API (Python)
 
-Key endpoints:
+### **Purpose**
+This is the *only* component the AI interacts with.  
+It acts as a translator between natural-language AI requests and actionable financial instructions.
+
+### **Responsibilities**
+- Receive requests from the AI (JSON format)
+- Validate schemas (FastAPI automatic validation)
+- Convert NL intent → structured actions
+- Reject malformed or suspicious inputs early
+
+### **Technologies**
+- **FastAPI** (recommended for async + speed)
+- **pydantic** (request validation)
+- **uvicorn** (server)
+
+### **Endpoints**
 - `POST /transaction/simulate`
 - `POST /transaction/execute`
-- `GET /accounts`
-- `GET /budget`
-
-The API is designed with:
-- LLM-friendly formatting
-- deterministically structured responses
-- ambiguity resolution hints for the agent
+- `GET /wallet/balance`
+- `GET /wallet/history`
+- `GET /rules`
 
 ---
 
-## ⚖️ Rule & Risk Engine
-The decision-making layer that evaluates all transaction attempts.
+# ⚖️ 3. Rule & Risk Engine
 
-Responsibilities:
-- Budget checks
-- Spending limits (daily, weekly, per-category)
-- Risk classification (normal, anomalous, dangerous)
-- Human-in-the-loop triggers
-- Conditional rules created by the user
+### **Purpose**
+Ensure the AI never spends money outside allowed boundaries.
 
-Examples of rules:
-- "Maximum transaction: 50€ unless tagged as recurring billing"
-- "If transaction > 100€, pause and request confirmation"
-- "Only allow whitelisted crypto addresses"
+### **Checks performed**
+- Daily/weekly spending limits  
+- Max per-transaction amount  
+- Allowed wallet addresses  
+- Allowed tokens  
+- Behavior anomaly detection  
 
-The engine outputs one of three decisions:
-- **ALLOW** → execution proceeds
-- **ALLOW_WITH_CONFIRMATION** → dashboard notification
-- **DENY** → logged and blocked
+### **Output**
+The engine returns:
 
----
+| Decision | Meaning |
+|---------|----------|
+| **ALLOW** | Execute immediately |
+| **REQUIRE_CONFIRMATION** | Wait for human validation |
+| **DENY** | Block and log |
 
-## 🔐 Secure Execution Layer
-The most sensitive part of the system.
-
-Responsibilities:
-- Holds encrypted private keys (crypto)
-- Interfaces with PSD2/Open Banking providers (banking)
-- Signs and broadcasts transactions
-- Ensures isolation of credentials from the AI agent
-
-Security Techniques Used:
-- Hardware Security Module (HSM)-like storage or MPC wallets
-- Transaction sandboxing
-- Tamper-proof logs
-- Non-exportable signing keys
-
-Supported rails:
-
-### **Crypto (Web3)**
-- EVM wallets (Ethereum, Polygon, etc.)
-- MPC wallets for multi-device signing
-- Stablecoins for reliable value
-
-### **Banking (PSD2)**
-- Account info
-- Payment initiation
-- Balance checks
+### **Technologies**
+- Python module integrated inside the API
+- Optional future ML anomaly detection
 
 ---
 
-## 📊 Dashboard & Monitoring
-A minimalistic black/white interface that allows users to:
-- View all agent activity
-- Inspect transaction history
-- Monitor budgets and spending trends
-- Review pending approvals
-- Set spending rules
-- Export logs
+# 🔐 4. Secure Execution Layer
 
-Dashboard elements:
-- **Graphs**: daily spend, spending categories, risk heatmap
-- **Latest agent requests**: timestamp, intent, decision
-- **KPIs**: success rate, average spend per task
-- **Security alerts**: unusual behavior, risk flags
+### **Purpose**
+Execute crypto payments **safely** without ever exposing private keys.
 
----
+### **Security Techniques**
+- Non-exportable encrypted key storage
+- MPC wallet (Fireblocks-style architecture, open-source alternatives possible)
+- Optional hardware integration later (Ledger, Trezor)
 
-## 🔄 Workflow Example
-Here’s a full example of the system in action:
+### **Responsibilities**
+- Build and sign transactions
+- Broadcast through reliable RPC provider
+- Maintain a tamper-proof audit log
 
-1. **AI agent forms an intent** (e.g., "buy hosting credits for 20€")
-2. It sends a request → `POST /transaction/execute`
-3. The API validates structure
-4. The Rule Engine evaluates limits
-5. The transaction is classified as low-risk
-6. Execution Layer signs a crypto tx or triggers a PSD2 payment
-7. Dashboard logs everything and updates graphs
+### **Technologies**
+- **web3.py**
+- Encrypted keys using **cryptography** library
+- RPC nodes (Infura, Alchemy, or self-hosted)
 
 ---
 
-## 🧱 Key Architectural Principles
-- **Safety-first**: All operations are mediated by deterministic rules
-- **Separation of concerns**: AI cannot access sensitive keys
-- **Auditability**: Every action is logged and inspectable
-- **Extensibility**: New AI agents, banks, and chains can be added easily
-- **LLM-native design**: Friendly formats and predictable responses
+# 🖥️ 5. Dashboard & Monitoring
+
+### **Purpose**
+Allow the user to:
+- Monitor AI behavior
+- See all pending or past transactions
+- Configure rules
+- Approve or reject confirmation-required actions
+
+### **Style**
+- Minimalist
+- Black & white
+- Graphs, clean spacing, strong typography
+
+### **Tech Stack**
+- **Frontend**: HTML + minimal JS or a lightweight React app
+- **Backend**: Same API, separate routes for dashboard
+- **Graphs**: chart.js or ECharts
+
+### **Dashboard Elements**
+- Latest AI requests list
+- Spending over time graph
+- Allowed vs blocked transactions
+- Risk alerts
+- User-defined security rules
 
 ---
 
-## 🔮 Future Extensions
-- AI-generated spending rules
-- Shared multi-user accounts
-- Deep anomaly detection on agent behavior
-- Smart contract programmable spending wallets
-- Payment batching and gas optimization
+# 📦 6. Step-by-Step Development Plan
+
+### **Phase 1 – Foundations (Backend core)** ✅ **COMPLETED**
+**Status**: Implemented and ready for testing
+
+**What's Built:**
+1. ✅ FastAPI backend with async lifecycle management
+2. ✅ Web3 connection manager supporting multiple networks (Sepolia, Mumbai, Ethereum, Polygon)
+3. ✅ Secure wallet creation and management with encrypted private key storage
+4. ✅ Balance and transaction history endpoints
+5. ✅ Health check and network info endpoints
+6. ✅ Comprehensive test suite
+7. ✅ Environment configuration and setup documentation
+
+**Technical Details:**
+- **Web3 Manager** (`src/execution/web3_connection.py`):
+  - Multi-network support with configurable RPC endpoints
+  - Connection health monitoring
+  - Gas price and block number tracking
+  - Support for both HTTP and WebSocket providers
+  - PoA middleware for Polygon networks
+
+- **Wallet Manager** (`src/execution/secure_execution.py`):
+  - PBKDF2 + Fernet encryption for private keys
+  - Secure key derivation with 100,000 iterations
+  - Encrypted JSON wallet storage
+  - Support for multiple wallets
+  - Balance and transaction count queries
+
+- **API Layer** (`src/api/main.py`, `src/api/routes.py`):
+  - RESTful API with automatic validation (Pydantic)
+  - CORS support for future dashboard integration
+  - Comprehensive error handling and logging
+  - Interactive API documentation (Swagger/ReDoc)
+
+**Endpoints Implemented:**
+- `GET /` - API status
+- `GET /health` - Health check with Web3 connection status
+- `POST /api/v1/wallet/create` - Create encrypted wallet
+- `POST /api/v1/wallet/load` - Load existing wallet
+- `GET /api/v1/wallet/list` - List available wallets
+- `GET /api/v1/wallet/current` - Get current wallet address
+- `GET /api/v1/wallet/balance` - Get native token balance
+- `GET /api/v1/wallet/history` - Get transaction history
+- `GET /api/v1/network/info` - Get blockchain network info
+
+**Security Implemented:**
+- Encrypted private key storage using industry-standard cryptography
+- Environment-based configuration (no hardcoded secrets)
+- Password-based key derivation (PBKDF2)
+- Secure key never exposed in API responses
+- Audit-ready logging
+
+**Testing:**
+- Unit tests for all API endpoints
+- Mocked Web3 and wallet managers for isolated testing
+- Test coverage for happy paths and error cases
+
+**How to Use:**
+See `SETUP.md` for detailed setup instructions and API usage examples.
 
 ---
+
+### **Phase 2 – Execution Layer** 🔄 **NEXT**
+5. Add transaction builder with gas estimation
+6. Implement transaction signing and broadcasting
+7. Add ERC-20 token support
+8. Create audit log system (database integration)
+9. Add transaction simulation
+10. Implement retry logic and error handling
+
+### **Phase 3 – Rule & Risk Engine**
+11. Design rule schema and storage
+12. Implement spending limit rules (daily/weekly/per-transaction)
+13. Add whitelist/blacklist for addresses and tokens
+14. Create rule evaluation engine (ALLOW/DENY/CONFIRM)
+15. Add behavioral anomaly detection
+16. Build rule management API endpoints
+
+### **Phase 4 – AI Proxy**
+17. Define standardized JSON request/response format for AI agents
+18. Create transaction simulation endpoint for AI
+19. Implement AI-friendly execute endpoint with natural language support
+20. Add intent parsing and validation
+21. Create AI-specific error messages and guidance
+22. Build example integration for ChatGPT/Claude
+
+### **Phase 5 – Dashboard**
+23. Design minimalist black & white UI
+24. Build real-time transaction monitoring
+25. Add spending graphs (daily/weekly/monthly)
+26. Create rule editor interface
+27. Implement approval workflow for flagged transactions
+28. Add wallet management UI
+
+### **Phase 6 – MVP Finalization**
+29. End-to-end integration testing
+30. Security audit and penetration testing
+31. Performance optimization
+32. Complete API and integration documentation
+33. Create video tutorials and examples
+34. Launch open-source MVP on GitHub  
+
+---
+
+# 🧱 7. Tech Stack Summary
+
+| Component | Technology |
+|----------|------------|
+| Backend Server | Python (FastAPI) |
+| Web3 Layer | web3.py |
+| Security | cryptography, encrypted key vault, MPC (optional) |
+| Dashboard Frontend | JS/HTML or small React |
+| Database (logs & rules) | SQLite or PostgreSQL |
+| AI Interface | JSON API compatible with any LLM |
+
+---
+
+# 🔮 8. Future Extensions
+
+- Multi-agent shared wallets  
+- Subscription automation  
+- On-chain spending rules (smart contract wallets)  
+- AI anomaly detection model  
+- Cross-chain support (Solana, Avalanche, etc.)  
+
+---
+
+# ✔️ Conclusion
+
+ChainPilot’s architecture is built to be:
+
+- **Secure**
+- **Modular**
+- **LLM-friendly**
+- **Scalable**
+- **Realistic for an MVP**
+
+It provides the first safe bridge allowing AI to interact with real crypto assets.

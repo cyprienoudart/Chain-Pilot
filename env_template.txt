@@ -1,0 +1,28 @@
+# ChainPilot Configuration
+# Copy this file to .env and fill in your values
+
+# Web3 Configuration
+# Network: sepolia, polygon_mumbai, ethereum, polygon
+WEB3_NETWORK=sepolia
+
+# RPC URL - Get from Infura, Alchemy, or other provider
+# Example Infura: https://sepolia.infura.io/v3/YOUR_PROJECT_ID
+# Example Alchemy: https://eth-sepolia.g.alchemy.com/v2/YOUR_API_KEY
+WEB3_RPC_URL=https://sepolia.infura.io/v3/YOUR_PROJECT_ID
+
+# Wallet Security
+# IMPORTANT: Change this to a strong password in production!
+# Consider using AWS Secrets Manager, HashiCorp Vault, or similar
+WALLET_PASSWORD=your_secure_password_here
+
+# Wallet Storage Directory (optional)
+# Defaults to ./wallets if not set
+WALLET_DIR=./wallets
+
+# API Configuration (optional)
+API_HOST=0.0.0.0
+API_PORT=8000
+
+# Logging Level (optional)
+LOG_LEVEL=INFO
+
