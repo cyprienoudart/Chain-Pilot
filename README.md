@@ -8,20 +8,109 @@ ChainPilot is a REST API that allows AI agents (like ChatGPT, Claude, etc.) to a
 
 ## 🎯 What It Does
 
-**Current (Phase 1 - ✅ Complete):**
-- Create and manage encrypted crypto wallets
-- Check balances across multiple blockchain networks
-- View transaction history
-- Multi-network support (Ethereum, Polygon, Sepolia, Mumbai, etc.)
-- RESTful API with auto-generated documentation
+**Current (Phases 1-3 - ✅ Complete):**
+- ✅ Create and manage encrypted crypto wallets
+- ✅ Check balances across multiple blockchain networks
+- ✅ Execute native token transactions (ETH, MATIC, etc.)
+- ✅ ERC-20 token support (transfers and balances)
+- ✅ Transaction estimation and gas management
+- ✅ **Automated rule enforcement & risk management**
+- ✅ **Spending limits (per-tx, daily, weekly, monthly)**
+- ✅ **Address whitelisting/blacklisting**
+- ✅ **Time-based restrictions**
+- ✅ **Automatic blocking/approval workflows**
+- ✅ Comprehensive audit logging
+- ✅ 🏖️ Sandbox mode for safe testing
+- ✅ Multi-network support (Ethereum, Polygon, Sepolia, Mumbai, etc.)
+- ✅ RESTful API with auto-generated documentation
 
-**Future (Phases 2-6):**
-- Execute transactions and send crypto
-- ERC-20 token support
-- Spending rules and risk management
+**Future (Phases 4-6):**
 - AI agent natural language integration
 - Web dashboard for monitoring
 - Production-ready security audit
+
+---
+
+## 🔒 Automated Safety & Restrictions
+
+**ChainPilot includes built-in safety controls to prevent costly mistakes:**
+
+### Automatic Rule Enforcement (Phase 3)
+
+All transactions are automatically checked against configured rules before execution:
+
+**Spending Limits:**
+- ✅ Per-transaction maximum amounts
+- ✅ Daily/weekly/monthly spending caps
+- ✅ Automatic blocking when limits exceeded
+
+**Address Controls:**
+- ✅ Whitelist mode (only allow approved addresses)
+- ✅ Blacklist mode (block specific addresses)
+- ✅ Prevents sending to wrong/malicious addresses
+
+**Smart Approvals:**
+- ✅ Large transactions flagged for manual approval
+- ✅ Time-based restrictions (business hours only)
+- ✅ Transaction count limits (prevent spam)
+
+**Risk Management:**
+- ✅ Automatic risk scoring (LOW/MEDIUM/HIGH/CRITICAL)
+- ✅ Pattern detection for suspicious activity
+- ✅ Complete audit trail of all decisions
+
+### Example Restrictions You Can Set
+
+```python
+# Block transactions over 0.5 ETH
+{
+  "rule_type": "spending_limit",
+  "parameters": {"type": "per_transaction", "amount": 0.5},
+  "action": "deny"
+}
+
+# Only allow transactions to approved addresses
+{
+  "rule_type": "address_whitelist",
+  "parameters": {"addresses": ["0x123...", "0x456..."]},
+  "action": "deny"
+}
+
+# Require approval for amounts over 1 ETH
+{
+  "rule_type": "amount_threshold",
+  "parameters": {"threshold": 1.0},
+  "action": "require_approval"
+}
+
+# Block transactions outside business hours
+{
+  "rule_type": "time_restriction",
+  "parameters": {"allowed_hours": "09:00-17:00", "timezone": "UTC"},
+  "action": "deny"
+}
+```
+
+### How It Works
+
+1. **User/AI requests transaction** → API receives request
+2. **Automatic evaluation** → All rules checked instantly
+3. **Action taken**:
+   - ✅ **All rules pass** → Transaction executes automatically
+   - ❌ **Deny rule fails** → Transaction blocked, user notified
+   - ⚠️ **Approval rule triggers** → Flagged for manual review
+4. **Audit logging** → All evaluations recorded in database
+
+### Bypass for Testing/Admin
+
+Rules can be bypassed for testing:
+```bash
+curl -X POST "http://localhost:8000/api/v1/transaction/send?skip_rules=true" \
+  -H "Content-Type: application/json" \
+  -d '{"to_address": "0x123...", "value": 10.0}'
+```
+
+**⚠️ Use with caution!** Bypassing rules removes safety controls.
 
 ---
 
@@ -31,13 +120,20 @@ ChainPilot is a REST API that allows AI agents (like ChatGPT, Claude, etc.) to a
 # 1. Install dependencies
 pip install -r requirements.txt
 
-# 2. Configure (add your RPC URL from Infura or Alchemy)
-cp .env.example .env
-nano .env  # Edit and add your RPC URL
+# 2. Test in sandbox mode (no RPC needed!)
+python3 run.py --sandbox
+python3 test_phase2.py  # Run automated tests
 
-# 3. Run
+# 3. Or configure for live mode (real blockchain)
+cp .env.example .env
+nano .env  # Add your RPC URL from Infura/Alchemy
 python3 run.py
 ```
+
+**Testing Guides:**
+- ⚡ **60-second test:** [QUICKTEST.md](QUICKTEST.md)
+- 🧪 **Full testing:** [TESTING_GUIDE.md](TESTING_GUIDE.md)
+- 📖 **Setup guide:** [QUICKSTART.md](QUICKSTART.md)
 
 **Then visit:** http://localhost:8000/docs
 

@@ -8,8 +8,14 @@ from contextlib import asynccontextmanager
 import logging
 
 from .routes import router
+from .rule_routes import router as rule_router
 from ..execution.secure_execution import WalletManager
 from ..execution.web3_connection import Web3Manager
+from ..execution.transaction_builder import TransactionBuilder
+from ..execution.token_manager import TokenManager
+from ..execution.audit_logger import AuditLogger
+from ..execution.sandbox_mode import is_sandbox_mode, SandboxWeb3Manager
+from ..rules.rule_engine import RuleEngine
 
 # Configure logging
 logging.basicConfig(
@@ -21,6 +27,10 @@ logger = logging.getLogger(__name__)
 # Global instances
 web3_manager = None
 wallet_manager = None
+transaction_builder = None
+token_manager = None
+audit_logger = None
+rule_engine = None
 
 
 @asynccontextmanager
@@ -29,25 +39,53 @@ async def lifespan(app: FastAPI):
     Lifespan context manager for startup and shutdown events
     """
     # Startup
-    global web3_manager, wallet_manager
+    global web3_manager, wallet_manager, transaction_builder, token_manager, audit_logger, rule_engine
     
     logger.info("Starting ChainPilot API...")
     
     try:
-        # Initialize Web3 connection
-        web3_manager = Web3Manager()
-        await web3_manager.connect()
-        logger.info("Web3 connection established")
+        # Check for sandbox mode
+        if is_sandbox_mode():
+            logger.warning("🏖️  SANDBOX MODE ACTIVE - All transactions will be simulated")
+            web3_manager = SandboxWeb3Manager()
+            await web3_manager.connect()
+            logger.info("Sandbox Web3 initialized")
+        else:
+            # Initialize real Web3 connection
+            web3_manager = Web3Manager()
+            await web3_manager.connect()
+            logger.info("Web3 connection established")
         
         # Initialize wallet manager
         wallet_manager = WalletManager(web3_manager)
         logger.info("Wallet manager initialized")
         
+        # Initialize transaction builder (Phase 2)
+        transaction_builder = TransactionBuilder(web3_manager)
+        logger.info("Transaction builder initialized")
+        
+        # Initialize token manager (Phase 2)
+        token_manager = TokenManager(web3_manager)
+        logger.info("Token manager initialized")
+        
+        # Initialize audit logger (Phase 2)
+        audit_logger = AuditLogger()
+        logger.info("Audit logger initialized")
+        
+        # Initialize Rule Engine
+        rule_engine = RuleEngine()
+        logger.info("Rule engine initialized")
+        
         # Store in app state for access in routes
         app.state.web3_manager = web3_manager
         app.state.wallet_manager = wallet_manager
+        app.state.transaction_builder = transaction_builder
+        app.state.token_manager = token_manager
+        app.state.audit_logger = audit_logger
+        app.state.rule_engine = rule_engine
         
-        logger.info("ChainPilot API started successfully")
+        mode = "SANDBOX" if is_sandbox_mode() else "LIVE"
+        logger.info(f"ChainPilot API started successfully (Phase 3) - Mode: {mode}")
         
     except Exception as e:
         logger.error(f"Failed to start ChainPilot API: {e}")
@@ -81,6 +119,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(router, prefix="/api/v1")
+app.include_router(rule_router, prefix="/api/v1")  # Phase 3: Rules
 
 
 @app.get("/")

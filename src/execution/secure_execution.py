@@ -244,4 +244,89 @@ class WalletManager:
         """List all available wallets"""
         wallet_files = self.wallet_dir.glob("*.json")
         return [f.stem for f in wallet_files]
+    
+    def sign_transaction(self, transaction: Dict[str, Any]) -> str:
+        """
+        Sign a transaction with the current wallet
+        
+        Args:
+            transaction: Transaction dictionary
+            
+        Returns:
+            str: Signed transaction (hex encoded)
+        """
+        if not self.current_wallet:
+            raise ValueError("No wallet loaded. Please load or create a wallet first.")
+        
+        try:
+            # Sign the transaction
+            signed_tx = self.web3_manager.w3.eth.account.sign_transaction(
+                transaction,
+                private_key=self.current_wallet.key
+            )
+            
+            logger.info(f"Transaction signed by {self.current_wallet.address[:10]}...")
+            
+            # Return raw signed transaction
+            return signed_tx.raw_transaction.hex()
+            
+        except Exception as e:
+            logger.error(f"Failed to sign transaction: {e}")
+            raise
+    
+    def send_transaction(self, signed_transaction: str) -> str:
+        """
+        Broadcast a signed transaction
+        
+        Args:
+            signed_transaction: Hex encoded signed transaction
+            
+        Returns:
+            str: Transaction hash
+        """
+        try:
+            # Send the signed transaction
+            tx_hash = self.web3_manager.w3.eth.send_raw_transaction(signed_transaction)
+            tx_hash_hex = tx_hash.hex()
+            
+            logger.info(f"Transaction sent: {tx_hash_hex}")
+            return tx_hash_hex
+            
+        except Exception as e:
+            logger.error(f"Failed to send transaction: {e}")
+            raise
+    
+    def wait_for_transaction_receipt(
+        self,
+        tx_hash: str,
+        timeout: int = 120
+    ) -> Dict[str, Any]:
+        """
+        Wait for transaction confirmation
+        
+        Args:
+            tx_hash: Transaction hash
+            timeout: Timeout in seconds
+            
+        Returns:
+            dict: Transaction receipt
+        """
+        try:
+            logger.info(f"Waiting for transaction {tx_hash} to be confirmed...")
+            
+            receipt = self.web3_manager.w3.eth.wait_for_transaction_receipt(
+                tx_hash,
+                timeout=timeout
+            )
+            
+            logger.info(
+                f"Transaction confirmed in block {receipt['blockNumber']}, "
+                f"status: {'SUCCESS' if receipt['status'] == 1 else 'FAILED'}"
+            )
+            
+            return dict(receipt)
+            
+        except Exception as e:
+            logger.error(f"Failed to get transaction receipt: {e}")
+            raise
 
