@@ -5,8 +5,7 @@ Handles blockchain network connections and RPC management
 import os
 import logging
 from typing import Optional, Dict, Any
-from web3 import Web3, AsyncWeb3
-from web3.middleware import geth_poa_middleware
+from web3 import Web3
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -89,9 +88,8 @@ class Web3Manager:
             
             self.w3 = Web3(provider)
             
-            # Add PoA middleware for some networks (like Polygon)
-            if self.network in ["polygon", "polygon_mumbai"]:
-                self.w3.middleware_onion.inject(geth_poa_middleware, layer=0)
+            # Note: PoA middleware not needed in web3.py v7+
+            # Polygon networks work without explicit middleware injection
             
             # Test connection
             if not self.w3.is_connected():
