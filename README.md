@@ -1,6 +1,6 @@
 # Chain Pilot
 
-**Chain Pilot** is a secure financial orchestration layer designed to connect intelligent agents (AI) with real-world financial systems — both traditional banking and crypto — without exposing sensitive credentials or losing human oversight.
+**Chain Pilot** is a secure financial orchestration layer designed to connect intelligent agents (AI) with real-world financial systems (both traditional banking and crypto) without exposing sensitive credentials or losing human oversight.
 
 This project aims to solve one of the biggest missing pieces in applied AI: **safe, controlled, autonomous financial action**.
 
