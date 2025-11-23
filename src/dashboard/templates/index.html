@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChainPilot Dashboard</title>
+    <link rel="stylesheet" href="/static/dashboard.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="logo">
+                <h1>🚀 ChainPilot</h1>
+                <span class="phase-badge">Phase 5 Complete</span>
+            </div>
+            <div class="network-status">
+                <span class="status-indicator" id="networkStatus">●</span>
+                <span id="networkName">Loading...</span>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="dashboard-main">
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <nav class="nav-menu">
+                    <button class="nav-item active" data-view="overview">
+                        📊 Overview
+                    </button>
+                    <button class="nav-item" data-view="ai-chat">
+                        🤖 AI Assistant
+                    </button>
+                    <button class="nav-item" data-view="transactions">
+                        💸 Transactions
+                    </button>
+                    <button class="nav-item" data-view="rules">
+                        🔒 Rules
+                    </button>
+                    <button class="nav-item" data-view="wallets">
+                        👛 Wallets
+                    </button>
+                </nav>
+            </aside>
+
+            <!-- Content Area -->
+            <main class="content-area">
+                <!-- Overview View -->
+                <div id="overview-view" class="view active">
+                    <h2>Overview</h2>
+                    
+                    <!-- Wallet Summary -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon">👛</div>
+                            <div class="stat-content">
+                                <div class="stat-label">Current Wallet</div>
+                                <div class="stat-value" id="currentWallet">No wallet loaded</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">💰</div>
+                            <div class="stat-content">
+                                <div class="stat-label">Balance</div>
+                                <div class="stat-value" id="walletBalance">0 ETH</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">📈</div>
+                            <div class="stat-content">
+                                <div class="stat-label">Total Transactions</div>
+                                <div class="stat-value" id="totalTransactions">0</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">🔒</div>
+                            <div class="stat-content">
+                                <div class="stat-label">Active Rules</div>
+                                <div class="stat-value" id="activeRules">0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Activity -->
+                    <div class="recent-activity">
+                        <h3>Recent Transactions</h3>
+                        <div class="activity-list" id="recentTransactions">
+                            <div class="empty-state">No recent transactions</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI Chat View -->
+                <div id="ai-chat-view" class="view">
+                    <h2>AI Assistant</h2>
+                    <div class="ai-chat-container">
+                        <div class="chat-messages" id="chatMessages">
+                            <div class="chat-message bot">
+                                <div class="message-avatar">🤖</div>
+                                <div class="message-content">
+                                    <p>Hello! I'm your ChainPilot AI assistant. You can ask me to:</p>
+                                    <ul>
+                                        <li>"Send 0.5 ETH to alice"</li>
+                                        <li>"What's my balance?"</li>
+                                        <li>"Create a daily spending limit of 1 ETH"</li>
+                                        <li>"Check transaction status"</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="chat-input-container">
+                            <input type="text" id="chatInput" placeholder="Ask me anything..." />
+                            <button id="sendChatBtn">Send</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transactions View -->
+                <div id="transactions-view" class="view">
+                    <h2>Transaction History</h2>
+                    <div class="transactions-controls">
+                        <button class="btn btn-primary" id="newTransactionBtn">+ New Transaction</button>
+                        <input type="text" id="searchTransactions" placeholder="Search transactions..." />
+                    </div>
+                    <div class="transactions-table" id="transactionsTable">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>From</th>
+                                    <th>To</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactionsTableBody">
+                                <tr>
+                                    <td colspan="6" class="empty-state">No transactions found</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Rules View -->
+                <div id="rules-view" class="view">
+                    <h2>Security Rules</h2>
+                    <div class="rules-controls">
+                        <button class="btn btn-primary" id="newRuleBtn">+ Create Rule</button>
+                    </div>
+                    <div class="rules-list" id="rulesList">
+                        <div class="empty-state">No rules configured</div>
+                    </div>
+                </div>
+
+                <!-- Wallets View -->
+                <div id="wallets-view" class="view">
+                    <h2>Wallet Management</h2>
+                    <div class="wallets-controls">
+                        <button class="btn btn-primary" id="createWalletBtn">+ Create Wallet</button>
+                    </div>
+                    <div class="wallets-list" id="walletsList">
+                        <div class="empty-state">Loading wallets...</div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <!-- New Transaction Modal -->
+    <div id="newTransactionModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>Send Transaction</h3>
+            <form id="newTransactionForm">
+                <div class="form-group">
+                    <label>To Address:</label>
+                    <input type="text" id="txToAddress" required placeholder="0x..." />
+                </div>
+                <div class="form-group">
+                    <label>Amount (ETH):</label>
+                    <input type="number" id="txAmount" step="0.001" required placeholder="0.5" />
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Send</button>
+                    <button type="button" class="btn btn-secondary" id="cancelTxBtn">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- New Rule Modal -->
+    <div id="newRuleModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>Create Security Rule</h3>
+            <form id="newRuleForm">
+                <div class="form-group">
+                    <label>Rule Name:</label>
+                    <input type="text" id="ruleName" required placeholder="Daily Spending Limit" />
+                </div>
+                <div class="form-group">
+                    <label>Rule Type:</label>
+                    <select id="ruleType" required>
+                        <option value="spending_limit">Spending Limit</option>
+                        <option value="address_whitelist">Address Whitelist</option>
+                        <option value="address_blacklist">Address Blacklist</option>
+                        <option value="time_restriction">Time Restriction</option>
+                    </select>
+                </div>
+                <div class="form-group" id="ruleParamsGroup">
+                    <!-- Dynamic based on rule type -->
+                </div>
+                <div class="form-group">
+                    <label>Action:</label>
+                    <select id="ruleAction" required>
+                        <option value="deny">Deny</option>
+                        <option value="require_approval">Require Approval</option>
+                        <option value="allow">Allow</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Create Rule</button>
+                    <button type="button" class="btn btn-secondary" id="cancelRuleBtn">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create Wallet Modal -->
+    <div id="createWalletModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>Create New Wallet</h3>
+            <form id="createWalletForm">
+                <div class="form-group">
+                    <label>Wallet Name:</label>
+                    <input type="text" id="walletName" required placeholder="my_wallet" />
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Create</button>
+                    <button type="button" class="btn btn-secondary" id="cancelWalletBtn">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/static/dashboard.js"></script>
+</body>
+</html>
+

@@ -4,8 +4,8 @@
 
 ChainPilot is a production-ready REST API that allows AI agents (like ChatGPT, Claude, etc.) to autonomously manage crypto wallets and execute blockchain transactions with built-in rule enforcement and human oversight. Built with security-first principles using Python, FastAPI, and Web3.
 
-[![Tests](https://img.shields.io/badge/tests-25%2F25%20passing-brightgreen)]()
-[![Phase](https://img.shields.io/badge/phase-4%20complete-blue)]()
+[![Tests](https://img.shields.io/badge/tests-33%2F34%20passing-brightgreen)]()
+[![Phase](https://img.shields.io/badge/phase-5%20complete-blue)]()
 [![Python](https://img.shields.io/badge/python-3.13-blue)]()
 [![License](https://img.shields.io/badge/license-MIT-green)]()
 
@@ -13,7 +13,7 @@ ChainPilot is a production-ready REST API that allows AI agents (like ChatGPT, C
 
 ## 🎯 What It Does
 
-### ✅ Phases 1-4 Complete (100%)
+### ✅ Phases 1-5 Complete (100%)
 
 **Phase 1: Core Backend & Wallet Management**
 - ✅ Encrypted wallet creation and management (PBKDF2 + Fernet AES-128)
@@ -38,7 +38,7 @@ ChainPilot is a production-ready REST API that allows AI agents (like ChatGPT, C
 - ✅ **Context-aware:** Tracks spending history and patterns
 - ✅ **Audit trail:** All rule evaluations logged
 
-**Phase 4: AI Natural Language Integration** ⭐ NEW
+**Phase 4: AI Natural Language Integration**
 - ✅ **Intent parsing:** Understand plain English ("Send 0.5 ETH to alice")
 - ✅ **6+ intent types:** Send, balance check, create rule, check status, token balance, create wallet
 - ✅ **Entity extraction:** Amounts, addresses, currencies, periods automatically extracted
@@ -47,10 +47,19 @@ ChainPilot is a production-ready REST API that allows AI agents (like ChatGPT, C
 - ✅ **Execute actions:** Parse and execute in one API call
 - ✅ **Security maintained:** All Phase 3 rules still apply
 
+**Phase 5: Web Dashboard** ⭐ NEW
+- ✅ **Modern UI:** Dark theme, responsive design, card-based layout
+- ✅ **Overview Dashboard:** Wallet stats, balance, transactions, active rules
+- ✅ **AI Chat Interface:** Natural language chat with execute buttons
+- ✅ **Transaction History:** View, search, and filter all transactions
+- ✅ **Rule Management:** Create and manage security rules visually
+- ✅ **Wallet Management:** Create, load, and switch between wallets
+- ✅ **Real-time Updates:** Auto-refresh every 10 seconds
+- ✅ **Full Integration:** All phases accessible from one interface
+
 ### 📅 Future Phases
 
-**Phase 5:** Web Dashboard with real-time monitoring  
-**Phase 6:** Production hardening and security audit
+**Phase 6:** Production hardening, security audit, optimization, deployment guide
 
 ---
 

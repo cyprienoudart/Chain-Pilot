@@ -10,6 +10,7 @@ import logging
 from .routes import router
 from .rule_routes import router as rule_router
 from .ai_routes import router as ai_router
+from .dashboard_routes import router as dashboard_router
 from ..execution.secure_execution import WalletManager
 from ..execution.web3_connection import Web3Manager
 from ..execution.transaction_builder import TransactionBuilder
@@ -86,7 +87,8 @@ async def lifespan(app: FastAPI):
         app.state.rule_engine = rule_engine
         
         mode = "SANDBOX" if is_sandbox_mode() else "LIVE"
-        logger.info(f"ChainPilot API started successfully (Phase 4) - Mode: {mode}")
+        logger.info(f"ChainPilot API started successfully (Phase 5) - Mode: {mode}")
+        logger.info(f"Dashboard available at: http://localhost:8000/")
         
     except Exception as e:
         logger.error(f"Failed to start ChainPilot API: {e}")
@@ -122,16 +124,19 @@ app.add_middleware(
 app.include_router(router, prefix="/api/v1")
 app.include_router(rule_router, prefix="/api/v1")  # Phase 3: Rules
 app.include_router(ai_router, prefix="/api/v1")  # Phase 4: AI Integration
+app.include_router(dashboard_router)  # Phase 5: Dashboard (no prefix for root routes)
 
 
-@app.get("/")
-async def root():
-    """Root endpoint - API status"""
+@app.get("/api")
+async def api_root():
+    """API root endpoint - API status"""
     return {
         "name": "ChainPilot API",
         "version": "0.1.0",
         "status": "running",
-        "phase": "1 - Core Backend"
+        "phase": "5 - Web Dashboard",
+        "dashboard": "http://localhost:8000/",
+        "api_docs": "http://localhost:8000/docs"
     }
 
 
