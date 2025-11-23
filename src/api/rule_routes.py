@@ -214,9 +214,12 @@ async def evaluate_transaction(
         
         # Get from_address if not provided
         if not from_address:
-            if not wallet_manager.current_wallet:
-                raise HTTPException(status_code=400, detail="No wallet loaded and no from_address provided")
-            from_address = wallet_manager.current_wallet.address
+            # Try to get from current wallet
+            if wallet_manager.current_wallet:
+                from_address = wallet_manager.current_wallet.address
+            else:
+                # Use a dummy address for evaluation if no wallet loaded
+                from_address = "0x0000000000000000000000000000000000000000"
         
         transaction = {
             "from_address": from_address,

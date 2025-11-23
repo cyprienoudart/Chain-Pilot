@@ -9,6 +9,7 @@ import logging
 
 from .routes import router
 from .rule_routes import router as rule_router
+from .ai_routes import router as ai_router
 from ..execution.secure_execution import WalletManager
 from ..execution.web3_connection import Web3Manager
 from ..execution.transaction_builder import TransactionBuilder
@@ -85,7 +86,7 @@ async def lifespan(app: FastAPI):
         app.state.rule_engine = rule_engine
         
         mode = "SANDBOX" if is_sandbox_mode() else "LIVE"
-        logger.info(f"ChainPilot API started successfully (Phase 3) - Mode: {mode}")
+        logger.info(f"ChainPilot API started successfully (Phase 4) - Mode: {mode}")
         
     except Exception as e:
         logger.error(f"Failed to start ChainPilot API: {e}")
@@ -120,6 +121,7 @@ app.add_middleware(
 # Include routers
 app.include_router(router, prefix="/api/v1")
 app.include_router(rule_router, prefix="/api/v1")  # Phase 3: Rules
+app.include_router(ai_router, prefix="/api/v1")  # Phase 4: AI Integration
 
 
 @app.get("/")

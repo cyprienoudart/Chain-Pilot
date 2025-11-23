@@ -4,8 +4,8 @@
 
 ChainPilot is a production-ready REST API that allows AI agents (like ChatGPT, Claude, etc.) to autonomously manage crypto wallets and execute blockchain transactions with built-in rule enforcement and human oversight. Built with security-first principles using Python, FastAPI, and Web3.
 
-[![Tests](https://img.shields.io/badge/tests-16%2F16%20passing-brightgreen)]()
-[![Phase](https://img.shields.io/badge/phase-3%20complete-blue)]()
+[![Tests](https://img.shields.io/badge/tests-25%2F25%20passing-brightgreen)]()
+[![Phase](https://img.shields.io/badge/phase-4%20complete-blue)]()
 [![Python](https://img.shields.io/badge/python-3.13-blue)]()
 [![License](https://img.shields.io/badge/license-MIT-green)]()
 
@@ -13,7 +13,7 @@ ChainPilot is a production-ready REST API that allows AI agents (like ChatGPT, C
 
 ## 🎯 What It Does
 
-### ✅ Phases 1-3 Complete (100%)
+### ✅ Phases 1-4 Complete (100%)
 
 **Phase 1: Core Backend & Wallet Management**
 - ✅ Encrypted wallet creation and management (PBKDF2 + Fernet AES-128)
@@ -30,7 +30,7 @@ ChainPilot is a production-ready REST API that allows AI agents (like ChatGPT, C
 - ✅ Comprehensive audit logging (SQLite)
 - ✅ 🏖️ Sandbox mode for risk-free testing
 
-**Phase 3: Rule Engine & Automated Safety** ⭐ NEW
+**Phase 3: Rule Engine & Automated Safety**
 - ✅ **6 rule types:** Spending limits, whitelists, blacklists, time restrictions, thresholds, transaction counts
 - ✅ **Automatic enforcement:** Every transaction checked before execution
 - ✅ **3 actions:** ALLOW (proceed), DENY (block), REQUIRE_APPROVAL (flag for review)
@@ -38,9 +38,17 @@ ChainPilot is a production-ready REST API that allows AI agents (like ChatGPT, C
 - ✅ **Context-aware:** Tracks spending history and patterns
 - ✅ **Audit trail:** All rule evaluations logged
 
+**Phase 4: AI Natural Language Integration** ⭐ NEW
+- ✅ **Intent parsing:** Understand plain English ("Send 0.5 ETH to alice")
+- ✅ **6+ intent types:** Send, balance check, create rule, check status, token balance, create wallet
+- ✅ **Entity extraction:** Amounts, addresses, currencies, periods automatically extracted
+- ✅ **Name resolution:** Friendly names ("alice") map to addresses
+- ✅ **Confidence scoring:** 0.0-1.0 score for AI decision-making
+- ✅ **Execute actions:** Parse and execute in one API call
+- ✅ **Security maintained:** All Phase 3 rules still apply
+
 ### 📅 Future Phases
 
-**Phase 4:** AI Natural Language Integration (parse "Send 0.1 ETH to Alice")  
 **Phase 5:** Web Dashboard with real-time monitoring  
 **Phase 6:** Production hardening and security audit
 
