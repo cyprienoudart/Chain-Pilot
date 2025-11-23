@@ -18,6 +18,8 @@ from ..execution.token_manager import TokenManager
 from ..execution.audit_logger import AuditLogger
 from ..execution.sandbox_mode import is_sandbox_mode, SandboxWeb3Manager
 from ..rules.rule_engine import RuleEngine
+from ..security.ai_controls import AISpendingController, AISecurityLevel
+from ..security.auth import api_auth
 
 # Configure logging
 logging.basicConfig(
@@ -33,6 +35,7 @@ transaction_builder = None
 token_manager = None
 audit_logger = None
 rule_engine = None
+ai_controller = None
 
 
 @asynccontextmanager
@@ -41,7 +44,7 @@ async def lifespan(app: FastAPI):
     Lifespan context manager for startup and shutdown events
     """
     # Startup
-    global web3_manager, wallet_manager, transaction_builder, token_manager, audit_logger, rule_engine
+    global web3_manager, wallet_manager, transaction_builder, token_manager, audit_logger, rule_engine, ai_controller
     
     logger.info("Starting ChainPilot API...")
     
@@ -100,6 +103,13 @@ async def lifespan(app: FastAPI):
     logger.info("Shutting down ChainPilot API...")
     if web3_manager:
         await web3_manager.disconnect()
+    if audit_logger:
+        await audit_logger.disconnect()
+    if rule_engine:
+        await rule_engine.disconnect()
+    if ai_controller:
+        await ai_controller.disconnect()
+    await api_auth.disconnect()
     logger.info("ChainPilot API shut down complete")
 
 

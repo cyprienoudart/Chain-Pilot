@@ -29,6 +29,16 @@ class AuditLogger:
         self._init_database()
         logger.info(f"Audit logger initialized: {db_path}")
     
+    async def connect(self):
+        """Initialize database connection"""
+        self._init_database()
+        logger.info(f"Audit logger connected: {self.db_path}")
+    
+    async def disconnect(self):
+        """Disconnect from database"""
+        # SQLite connections are per-thread, no persistent connection to close
+        logger.info("Audit logger disconnected")
+    
     def _init_database(self):
         """Create database tables if they don't exist"""
         with sqlite3.connect(self.db_path) as conn:
