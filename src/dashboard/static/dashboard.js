@@ -9,8 +9,23 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('ChainPilot Dashboard initializing...');
     initializeNavigation();
     initializeCharts();
+    initializeWalletSelector();
     loadDashboardData();
     startAutoRefresh();
+    
+    // Initialize modal close buttons
+    document.querySelectorAll('.modal .close, .modal-close').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.target.closest('.modal').style.display = 'none';
+        });
+    });
+    
+    // Close modals on outside click
+    window.addEventListener('click', (e) => {
+        if (e.target.classList.contains('modal')) {
+            e.target.style.display = 'none';
+        }
+    });
 });
 
 // Navigation
@@ -43,6 +58,8 @@ function switchView(viewName) {
         loadTransactions();
     } else if (viewName === 'rules') {
         loadRules();
+    } else if (viewName === 'wallets') {
+        loadWalletsEnhanced();
     }
 }
 
@@ -123,9 +140,8 @@ async function loadDashboardData() {
         const health = await fetch('/health').then(r => r.json());
         updateNetworkStatus(health);
         
-        // Load wallet list
-        const walletList = await fetch(`${API_BASE}/wallet/list`).then(r => r.json());
-        updateWalletSelector(walletList);
+        // Load wallet list - use enhanced loading for selector
+        await loadWalletsEnhanced();
         
         // Load balance
         try {
@@ -170,6 +186,8 @@ function updateNetworkStatus(health) {
 // Update Wallet Selector
 function updateWalletSelector(walletList) {
     const dropdown = document.getElementById('walletDropdown');
+    if (!dropdown) return; // Skip if element not found
+    
     dropdown.innerHTML = '<option value="">No Wallet</option>';
     
     const wallets = walletList.wallets || walletList || [];
@@ -180,16 +198,36 @@ function updateWalletSelector(walletList) {
         dropdown.appendChild(option);
     });
     
-    dropdown.addEventListener('change', async (e) => {
+    // Remove old listeners by cloning
+    const newDropdown = dropdown.cloneNode(true);
+    dropdown.parentNode.replaceChild(newDropdown, dropdown);
+    
+    newDropdown.addEventListener('change', async (e) => {
         if (e.target.value) {
-            await fetch(`${API_BASE}/wallet/load`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ wallet_name: e.target.value })
-            });
-            loadDashboardData();
+            await switchWallet(e.target.value);
         }
     });
+}
+
+// Initialize wallet selector event listener
+function initializeWalletSelector() {
+    const walletSelect = document.getElementById('walletSelect');
+    if (walletSelect) {
+        walletSelect.addEventListener('change', async (e) => {
+            if (e.target.value) {
+                await switchWallet(e.target.value);
+            }
+        });
+    }
+    
+    const refreshWalletBtn = document.getElementById('refreshWalletBtn');
+    if (refreshWalletBtn) {
+        refreshWalletBtn.addEventListener('click', async () => {
+            await loadWalletsEnhanced();
+            await loadDashboardData();
+            showNotification('Wallets refreshed', 'success');
+        });
+    }
 }
 
 // Update Balance
@@ -263,12 +301,13 @@ function updateCharts(transactions) {
         activityChart.update();
     }
     
-    // Update type chart
+    // Update type chart - REAL DATA ONLY
     const nativeCount = txs.filter(tx => !tx.token_address).length;
     const tokenCount = txs.filter(tx => tx.token_address).length;
     
     if (typeChart) {
-        typeChart.data.datasets[0].data = [nativeCount || 1, tokenCount, 0];
+        // Show actual counts, no fake data
+        typeChart.data.datasets[0].data = [nativeCount, tokenCount, 0];
         typeChart.update();
     }
 }
@@ -304,24 +343,379 @@ async function loadTransactions() {
 async function loadRules() {
     try {
         const rules = await fetch(`${API_BASE}/rules`).then(r => r.json());
-        const grid = document.getElementById('rulesGrid');
+        const container = document.getElementById('rulesList');
         const rulesList = rules.rules || [];
         
         if (rulesList.length === 0) {
-            grid.innerHTML = '<div class="empty-message">No rules configured</div>';
+            container.innerHTML = '<div class="empty-state">No rules configured</div>';
             return;
         }
         
-        grid.innerHTML = rulesList.map(rule => `
-            <div class="rule-card">
-                <h4>${rule.name}</h4>
-                <div class="rule-type">${rule.rule_type.replace('_', ' ').toUpperCase()}</div>
-                <div class="rule-status">${rule.enabled ? 'Active' : 'Inactive'}</div>
-            </div>
-        `).join('');
+        container.innerHTML = rulesList.map(rule => {
+            const description = getRuleDescription(rule);
+            const parametersHtml = formatRuleParameters(rule);
+            
+            return `
+                <div class="rule-card ${rule.enabled ? 'rule-active' : 'rule-inactive'}">
+                    <div class="rule-header">
+                        <div class="rule-info">
+                            <h4>${rule.rule_name}</h4>
+                            <span class="rule-type-badge">${rule.rule_type.replace(/_/g, ' ')}</span>
+                        </div>
+                        <div class="rule-actions">
+                            <label class="toggle-switch">
+                                <input type="checkbox" ${rule.enabled ? 'checked' : ''} 
+                                    onchange="toggleRule(${rule.rule_id}, this.checked)">
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <button class="btn-icon" onclick="editRule(${rule.rule_id})" title="Edit">✏️</button>
+                            <button class="btn-icon" onclick="deleteRule(${rule.rule_id})" title="Delete">🗑️</button>
+                        </div>
+                    </div>
+                    <div class="rule-description">${description}</div>
+                    <div class="rule-details">
+                        ${parametersHtml}
+                    </div>
+                    <div class="rule-footer">
+                        <span class="rule-action">Action: <strong>${rule.action}</strong></span>
+                        <span class="rule-priority">Priority: ${rule.priority}</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
     } catch (error) {
         console.error('Error loading rules:', error);
     }
+}
+
+// Get rule description
+function getRuleDescription(rule) {
+    const descriptions = {
+        'spending_limit': 'Controls how much can be spent within a specific time period',
+        'address_whitelist': 'Only allows transactions to pre-approved addresses',
+        'address_blacklist': 'Blocks transactions to specific addresses',
+        'time_restriction': 'Limits transactions to specific hours or days',
+        'amount_threshold': 'Requires approval for transactions above a certain amount',
+        'daily_transaction_count': 'Limits the number of transactions per day'
+    };
+    return descriptions[rule.rule_type] || 'Custom rule';
+}
+
+// Format rule parameters
+function formatRuleParameters(rule) {
+    const params = rule.parameters;
+    const type = rule.rule_type;
+    
+    if (type === 'spending_limit') {
+        const limitType = params.type || 'daily';
+        const amount = params.amount || 0;
+        return `<div class="param-item">Limit: <strong>${amount} ETH</strong> per ${limitType}</div>`;
+    } else if (type === 'address_whitelist' || type === 'address_blacklist') {
+        const addresses = params.addresses || [];
+        if (addresses.length === 0) return '<div class="param-item">No addresses configured</div>';
+        return `<div class="param-item">${addresses.length} address(es) configured</div>`;
+    } else if (type === 'time_restriction') {
+        const hours = params.allowed_hours || 'Not set';
+        const timezone = params.timezone || 'UTC';
+        return `<div class="param-item">Hours: <strong>${hours}</strong> (${timezone})</div>`;
+    } else if (type === 'amount_threshold') {
+        const threshold = params.threshold || 0;
+        return `<div class="param-item">Threshold: <strong>${threshold} ETH</strong></div>`;
+    } else if (type === 'daily_transaction_count') {
+        const maxCount = params.max_count || 0;
+        return `<div class="param-item">Max transactions: <strong>${maxCount}</strong> per day</div>`;
+    }
+    
+    return '<div class="param-item">Custom parameters</div>';
+}
+
+// Toggle Rule
+async function toggleRule(ruleId, enabled) {
+    try {
+        const response = await fetch(`${API_BASE}/rules/${ruleId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ enabled })
+        });
+        
+        if (!response.ok) throw new Error('Failed to toggle rule');
+        
+        showNotification(`Rule ${enabled ? 'enabled' : 'disabled'} successfully`, 'success');
+        await loadRules();
+    } catch (error) {
+        console.error('Error toggling rule:', error);
+        showNotification('Failed to toggle rule', 'error');
+        await loadRules(); // Reload to reset toggle state
+    }
+}
+
+// Edit Rule
+async function editRule(ruleId) {
+    try {
+        const rules = await fetch(`${API_BASE}/rules`).then(r => r.json());
+        const rule = rules.rules.find(r => r.rule_id === ruleId);
+        
+        if (!rule) throw new Error('Rule not found');
+        
+        // Populate edit modal
+        document.getElementById('editRuleId').value = rule.rule_id;
+        document.getElementById('editRuleName').value = rule.rule_name;
+        document.getElementById('editRuleType').value = rule.rule_type;
+        document.getElementById('editRuleAction').value = rule.action;
+        document.getElementById('editRulePriority').value = rule.priority;
+        
+        // Update parameters based on rule type
+        updateEditRuleParams(rule.rule_type, rule.parameters);
+        
+        // Show modal
+        document.getElementById('editRuleModal').style.display = 'block';
+    } catch (error) {
+        console.error('Error loading rule for edit:', error);
+        showNotification('Failed to load rule', 'error');
+    }
+}
+
+// Update edit rule parameters section
+function updateEditRuleParams(ruleType, currentParams = {}) {
+    const paramsGroup = document.getElementById('editRuleParamsGroup');
+    
+    if (ruleType === 'spending_limit') {
+        paramsGroup.innerHTML = `
+            <label>Period:</label>
+            <select id="editParamType">
+                <option value="per_transaction" ${currentParams.type === 'per_transaction' ? 'selected' : ''}>Per Transaction</option>
+                <option value="daily" ${currentParams.type === 'daily' ? 'selected' : ''}>Daily</option>
+                <option value="weekly" ${currentParams.type === 'weekly' ? 'selected' : ''}>Weekly</option>
+                <option value="monthly" ${currentParams.type === 'monthly' ? 'selected' : ''}>Monthly</option>
+            </select>
+            <label>Amount (ETH):</label>
+            <input type="number" id="editParamAmount" step="0.01" value="${currentParams.amount || 1.0}" required>
+        `;
+    } else if (ruleType === 'amount_threshold') {
+        paramsGroup.innerHTML = `
+            <label>Threshold (ETH):</label>
+            <input type="number" id="editParamThreshold" step="0.01" value="${currentParams.threshold || 0.5}" required>
+        `;
+    } else if (ruleType === 'address_whitelist' || ruleType === 'address_blacklist') {
+        const addresses = currentParams.addresses || [];
+        paramsGroup.innerHTML = `
+            <label>Addresses (one per line):</label>
+            <textarea id="editParamAddresses" rows="4" placeholder="0x...">${addresses.join('\n')}</textarea>
+        `;
+    } else if (ruleType === 'time_restriction') {
+        paramsGroup.innerHTML = `
+            <label>Allowed Hours (HH:MM-HH:MM):</label>
+            <input type="text" id="editParamHours" value="${currentParams.allowed_hours || '09:00-17:00'}" required>
+            <label>Timezone:</label>
+            <input type="text" id="editParamTimezone" value="${currentParams.timezone || 'UTC'}" required>
+        `;
+    } else if (ruleType === 'daily_transaction_count') {
+        paramsGroup.innerHTML = `
+            <label>Max Transactions per Day:</label>
+            <input type="number" id="editParamMaxCount" value="${currentParams.max_count || 10}" required>
+        `;
+    }
+}
+
+// Delete Rule
+async function deleteRule(ruleId) {
+    if (!confirm('Are you sure you want to delete this rule?')) return;
+    
+    try {
+        const response = await fetch(`${API_BASE}/rules/${ruleId}`, {
+            method: 'DELETE'
+        });
+        
+        if (!response.ok) throw new Error('Failed to delete rule');
+        
+        showNotification('Rule deleted successfully', 'success');
+        await loadRules();
+    } catch (error) {
+        console.error('Error deleting rule:', error);
+        showNotification('Failed to delete rule', 'error');
+    }
+}
+
+// Submit Edit Rule Form
+async function submitEditRule(event) {
+    event.preventDefault();
+    
+    const ruleId = document.getElementById('editRuleId').value;
+    const ruleType = document.getElementById('editRuleType').value;
+    
+    // Build parameters object based on rule type
+    let parameters = {};
+    
+    if (ruleType === 'spending_limit') {
+        parameters = {
+            type: document.getElementById('editParamType').value,
+            amount: parseFloat(document.getElementById('editParamAmount').value)
+        };
+    } else if (ruleType === 'amount_threshold') {
+        parameters = {
+            threshold: parseFloat(document.getElementById('editParamThreshold').value)
+        };
+    } else if (ruleType === 'address_whitelist' || ruleType === 'address_blacklist') {
+        const addressesText = document.getElementById('editParamAddresses').value;
+        parameters = {
+            addresses: addressesText.split('\n').map(a => a.trim()).filter(a => a)
+        };
+    } else if (ruleType === 'time_restriction') {
+        parameters = {
+            allowed_hours: document.getElementById('editParamHours').value,
+            timezone: document.getElementById('editParamTimezone').value
+        };
+    } else if (ruleType === 'daily_transaction_count') {
+        parameters = {
+            max_count: parseInt(document.getElementById('editParamMaxCount').value)
+        };
+    }
+    
+    const priority = parseInt(document.getElementById('editRulePriority').value);
+    
+    try {
+        const response = await fetch(`${API_BASE}/rules/${ruleId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ parameters, priority })
+        });
+        
+        if (!response.ok) throw new Error('Failed to update rule');
+        
+        showNotification('Rule updated successfully', 'success');
+        document.getElementById('editRuleModal').style.display = 'none';
+        await loadRules();
+    } catch (error) {
+        console.error('Error updating rule:', error);
+        showNotification('Failed to update rule', 'error');
+    }
+}
+
+// Load Wallets with Enhanced Display
+async function loadWalletsEnhanced() {
+    try {
+        const response = await fetch(`${API_BASE}/wallet/list`);
+        const wallets = await response.json();
+        const walletsContainer = document.getElementById('walletsList');
+        const walletSelect = document.getElementById('walletSelect');
+        
+        // Get current wallet
+        let currentWalletAddress = null;
+        try {
+            const balanceResponse = await fetch(`${API_BASE}/wallet/balance`);
+            if (balanceResponse.ok) {
+                const balanceData = await balanceResponse.json();
+                currentWalletAddress = balanceData.address;
+            }
+        } catch (e) {
+            // No wallet loaded
+        }
+        
+        if (wallets.length === 0) {
+            walletsContainer.innerHTML = '<div class="empty-state">No wallets found</div>';
+            walletSelect.innerHTML = '<option value="">No wallets</option>';
+            return;
+        }
+        
+        // Update select dropdown with enhanced options
+        walletSelect.innerHTML = wallets.map(w => `
+            <option value="${w.name}" ${w.address === currentWalletAddress ? 'selected' : ''}>
+                ${w.name} - ${w.address.substring(0, 8)}... (${w.network})
+            </option>
+        `).join('');
+        
+        // Update wallets list view with cards
+        walletsContainer.innerHTML = await Promise.all(wallets.map(async wallet => {
+            const isActive = wallet.address === currentWalletAddress;
+            
+            // Try to get balance for this wallet
+            let balance = '---';
+            if (isActive) {
+                try {
+                    const balanceResponse = await fetch(`${API_BASE}/wallet/balance`);
+                    if (balanceResponse.ok) {
+                        const balanceData = await balanceResponse.json();
+                        balance = parseFloat(balanceData.balance_eth).toFixed(4);
+                    }
+                } catch (e) {
+                    // Ignore balance fetch errors
+                }
+            }
+            
+            return `
+                <div class="wallet-card ${isActive ? 'wallet-active' : ''}">
+                    <div class="wallet-header">
+                        <div class="wallet-icon">${isActive ? '✅' : '👛'}</div>
+                        <div class="wallet-info">
+                            <h4>${wallet.name} ${isActive ? '<span class="active-badge">ACTIVE</span>' : ''}</h4>
+                            <div class="wallet-address" title="${wallet.address}">${wallet.address}</div>
+                        </div>
+                    </div>
+                    <div class="wallet-details">
+                        <div class="wallet-detail-item">
+                            <span class="label">Network:</span>
+                            <span class="value">${wallet.network}</span>
+                        </div>
+                        <div class="wallet-detail-item">
+                            <span class="label">Balance:</span>
+                            <span class="value">${balance} ETH</span>
+                        </div>
+                    </div>
+                    <div class="wallet-actions">
+                        ${!isActive ? `<button class="btn btn-primary btn-small" onclick="switchWallet('${wallet.name}')">Switch to this wallet</button>` : '<span class="wallet-status">Currently Active</span>'}
+                    </div>
+                </div>
+            `;
+        })).then(cards => cards.join(''));
+        
+    } catch (error) {
+        console.error('Error loading wallets:', error);
+        showNotification('Failed to load wallets', 'error');
+    }
+}
+
+// Switch Wallet
+async function switchWallet(walletName) {
+    try {
+        const response = await fetch(`${API_BASE}/wallet/load`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ wallet_name: walletName })
+        });
+        
+        if (!response.ok) throw new Error('Failed to switch wallet');
+        
+        showNotification(`Switched to wallet: ${walletName}`, 'success');
+        await loadWalletsEnhanced();
+        await loadDashboardData();
+    } catch (error) {
+        console.error('Error switching wallet:', error);
+        showNotification('Failed to switch wallet', 'error');
+    }
+}
+
+// Notification System
+function showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.textContent = message;
+    
+    // Add to body
+    document.body.appendChild(notification);
+    
+    // Show notification
+    setTimeout(() => {
+        notification.classList.add('notification-show');
+    }, 10);
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+        notification.classList.remove('notification-show');
+        setTimeout(() => {
+            document.body.removeChild(notification);
+        }, 300);
+    }, 3000);
 }
 
 // Chat Functions

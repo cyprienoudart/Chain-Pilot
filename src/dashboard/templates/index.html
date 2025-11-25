@@ -236,6 +236,46 @@
         </div>
     </div>
 
+    <!-- Edit Rule Modal -->
+    <div id="editRuleModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Rule</h3>
+                <button class="modal-close" onclick="document.getElementById('editRuleModal').style.display='none'">&times;</button>
+            </div>
+            <form id="editRuleForm" onsubmit="submitEditRule(event)">
+                <input type="hidden" id="editRuleId" />
+                <div class="form-group">
+                    <label>Rule Name</label>
+                    <input type="text" id="editRuleName" disabled />
+                </div>
+                <div class="form-group">
+                    <label>Rule Type</label>
+                    <input type="text" id="editRuleType" disabled />
+                </div>
+                <div class="form-group">
+                    <label>Action</label>
+                    <select id="editRuleAction" disabled>
+                        <option value="deny">Deny</option>
+                        <option value="require_approval">Require Approval</option>
+                        <option value="allow">Allow</option>
+                    </select>
+                </div>
+                <div id="editRuleParamsGroup">
+                    <!-- Dynamic parameters -->
+                </div>
+                <div class="form-group">
+                    <label>Priority</label>
+                    <input type="number" id="editRulePriority" required />
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="document.getElementById('editRuleModal').style.display='none'">Cancel</button>
+                    <button type="submit" class="btn-primary">Update Rule</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script src="/static/dashboard.js"></script>
 </body>
 </html>
