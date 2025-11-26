@@ -213,4 +213,22 @@ class Web3Manager:
     def ether_to_wei(self, ether: float) -> int:
         """Convert ether to wei"""
         return self.w3.to_wei(ether, 'ether')
+    
+    async def broadcast_raw_transaction(self, signed_tx_hex: str) -> str:
+        """
+        Broadcast a signed transaction to the network
+        
+        Args:
+            signed_tx_hex: Signed transaction as hex string
+            
+        Returns:
+            str: Transaction hash
+        """
+        try:
+            tx_hash = self.w3.eth.send_raw_transaction(signed_tx_hex)
+            logger.info(f"Transaction broadcasted: {tx_hash.hex()}")
+            return tx_hash.hex()
+        except Exception as e:
+            logger.error(f"Failed to broadcast transaction: {e}")
+            raise
 

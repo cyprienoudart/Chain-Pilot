@@ -19,13 +19,13 @@
                     <span id="networkName">Loading...</span>
                 </div>
             </div>
-            <div class="header-right">
+            <!-- <div class="header-right">
                 <div class="wallet-selector" id="walletSelector">
                     <select id="walletDropdown">
                         <option value="">No Wallet</option>
                     </select>
                 </div>
-            </div>
+            </div> -->
         </header>
 
         <!-- Main Layout -->
@@ -57,29 +57,30 @@
                     <!-- Stats Row -->
                     <div class="stats-row">
                         <div class="stat-card">
+                            <div class="stat-label">Wallet</div>
+                            <div class="stat-value" id="walletNameValue">Not Connected</div>
+                            <div class="stat-change" id="walletAddressShort">-</div>
+                        </div>
+                        <div class="stat-card">
                             <div class="stat-label">Balance</div>
-                            <div class="stat-value" id="balanceValue">0.00 ETH</div>
-                            <div class="stat-change">Sandbox Mode</div>
+                            <div class="stat-value" id="balanceValue">0.00</div>
+                            <div class="stat-change" id="networkValue">Sandbox Mode</div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-label">Transactions</div>
                             <div class="stat-value" id="txCountValue">0</div>
-                            <div class="stat-change" id="txChange">All time</div>
+                            <div class="stat-change" id="txChange"><span id="txConfirmed" style="color: #10B981;">0</span> successful, <span id="txDenied" style="color: #EF4444;">0</span> blocked</div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-label">Active Rules</div>
                             <div class="stat-value" id="rulesCountValue">0</div>
-                            <div class="stat-change">Enforced</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">Network</div>
-                            <div class="stat-value" id="networkValue">Sepolia</div>
-                            <div class="stat-change" id="chainId">Chain ID: -</div>
+                            <div class="stat-change">Protecting your wallet</div>
                         </div>
                     </div>
 
                     <!-- Charts Row -->
                     <div class="charts-row">
+                        <!-- Transaction Activity Chart -->
                         <div class="chart-card">
                             <div class="chart-header">
                                 <h3>Transaction Activity</h3>
@@ -89,6 +90,19 @@
                                 <canvas id="activityChart"></canvas>
                             </div>
                         </div>
+                        
+                        <!-- Transaction Status Chart - SUCCESS vs BLOCKED -->
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <h3>🎯 Transaction Status</h3>
+                                <div class="chart-legend">Success vs Blocked</div>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="statusChart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <!-- Transaction Types Chart -->
                         <div class="chart-card">
                             <div class="chart-header">
                                 <h3>Transaction Types</h3>
@@ -97,6 +111,17 @@
                             <div class="chart-container">
                                 <canvas id="typeChart"></canvas>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Wallet Info -->
+                    <div class="section-card">
+                        <div class="section-header">
+                            <h3>Active Wallet</h3>
+                            <button class="btn-text" onclick="openModal('importWalletModal')">📥 Import Wallet</button>
+                        </div>
+                        <div class="wallet-info" id="activeWalletInfo">
+                            <div class="empty-message">No wallet loaded</div>
                         </div>
                     </div>
 
@@ -147,17 +172,10 @@
                     </div>
                     <div class="chat-container">
                         <div class="chat-messages" id="chatMessages">
-                            <div class="message bot">
-                                <div class="message-content">
-                                    <div class="message-text">
-                                        <strong>ChainPilot AI</strong>
-                                        <p>Try: "Send 0.01 ETH to 0x742d..." or "What's my balance?"</p>
-                                    </div>
-                                </div>
-                            </div>
+                            <!-- Chat messages will appear here -->
                         </div>
                         <div class="chat-input">
-                            <input type="text" id="chatInput" placeholder="Ask me anything..." onkeypress="handleChatKeyPress(event)">
+                            <input type="text" id="chatInput" placeholder="Ask me anything... (e.g., 'What is my balance?' or 'Send 1 MATIC to 0x...')" onkeypress="handleChatKeyPress(event)">
                             <button class="btn-primary" onclick="sendChat()">Send</button>
                         </div>
                     </div>
@@ -169,6 +187,17 @@
                         <h2>Security Rules</h2>
                         <button class="btn-primary" onclick="openRuleModal()">+ New Rule</button>
                     </div>
+                    
+                    <!-- Active Rules Summary -->
+                    <div class="active-rules-summary" id="activeRulesSummary">
+                        <h3>🛡️ Active Protection</h3>
+                        <div class="active-rules-list" id="activeRulesList">
+                            <div class="empty-message">No active rules</div>
+                        </div>
+                    </div>
+                    
+                    <!-- All Rules Grid -->
+                    <h3 style="margin-top: 30px; margin-bottom: 15px;">All Rules</h3>
                     <div class="rules-grid" id="rulesGrid">
                         <div class="empty-message">No rules configured</div>
                     </div>
@@ -190,8 +219,9 @@
                     <input type="text" id="txTo" placeholder="0x..." required>
                 </div>
                 <div class="form-group">
-                    <label>Amount (ETH)</label>
+                    <label>Amount</label>
                     <input type="number" id="txAmount" step="0.001" placeholder="0.5" required>
+                    <small id="txAmountHint">Enter amount in network currency</small>
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="btn-secondary" onclick="closeModal('txModal')">Cancel</button>
@@ -215,22 +245,58 @@
                 </div>
                 <div class="form-group">
                     <label>Type</label>
-                    <select id="ruleType" required>
+                    <select id="ruleType" required onchange="updateRuleParamsForm()">
                         <option value="spending_limit">Spending Limit</option>
+                        <option value="amount_threshold">Amount Threshold</option>
                         <option value="address_whitelist">Address Whitelist</option>
                         <option value="address_blacklist">Address Blacklist</option>
+                        <option value="time_restriction">Time Restriction</option>
+                        <option value="daily_transaction_count">Daily Transaction Count</option>
                     </select>
+                </div>
+                <div id="ruleParamsGroup">
+                    <!-- Dynamic parameters -->
                 </div>
                 <div class="form-group">
                     <label>Action</label>
                     <select id="ruleAction" required>
                         <option value="deny">Deny</option>
                         <option value="require_approval">Require Approval</option>
+                        <option value="allow">Allow</option>
                     </select>
+                </div>
+                <div class="form-group">
+                    <label>Priority</label>
+                    <input type="number" id="rulePriority" value="5" required>
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="btn-secondary" onclick="closeModal('ruleModal')">Cancel</button>
                     <button type="submit" class="btn-primary">Create</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Import Wallet Modal -->
+    <div id="importWalletModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Import Wallet</h3>
+                <button class="modal-close" onclick="closeModal('importWalletModal')">&times;</button>
+            </div>
+            <form onsubmit="submitImportWallet(event)">
+                <div class="form-group">
+                    <label>Wallet Name</label>
+                    <input type="text" id="importWalletName" placeholder="my_wallet" required>
+                </div>
+                <div class="form-group">
+                    <label>Private Key</label>
+                    <input type="password" id="importPrivateKey" placeholder="0x..." required>
+                    <small style="color: #999;">⚠️ Never share your private key!</small>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="closeModal('importWalletModal')">Cancel</button>
+                    <button type="submit" class="btn-primary">Import</button>
                 </div>
             </form>
         </div>

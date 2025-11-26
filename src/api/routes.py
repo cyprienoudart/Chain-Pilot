@@ -23,6 +23,11 @@ class WalletCreateRequest(BaseModel):
     wallet_name: str = Field(default="default", description="Name for the wallet")
 
 
+class WalletImportRequest(BaseModel):
+    wallet_name: str = Field(..., description="Name for the imported wallet")
+    private_key: str = Field(..., description="Private key (with or without 0x prefix)")
+
+
 class WalletCreateResponse(BaseModel):
     wallet_name: str
     address: str
@@ -76,6 +81,32 @@ async def create_wallet(request: Request, body: WalletCreateRequest):
         )
     except Exception as e:
         logger.error(f"Failed to create wallet: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/wallet/import", response_model=WalletCreateResponse)
+async def import_wallet(request: Request, body: WalletImportRequest):
+    """
+    Import an existing wallet from private key
+    
+    **Security**: Private key is encrypted and stored securely
+    **Warning**: Never share your private key. This endpoint is for demo/testing purposes.
+    """
+    try:
+        wallet_manager = request.app.state.wallet_manager
+        
+        result = wallet_manager.import_wallet(body.wallet_name, body.private_key)
+        
+        return WalletCreateResponse(
+            wallet_name=result["wallet_name"],
+            address=result["address"],
+            network=result["network"],
+            message=f"Wallet imported successfully at {result['wallet_path']}"
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Failed to import wallet: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -275,7 +306,8 @@ async def estimate_transaction(request: Request, body: TransactionEstimateReques
         
         # Use sandbox mode if enabled
         if is_sandbox_mode():
-            checksum_to = web3_manager.to_checksum_address(body.to_address)
+            from web3 import Web3
+            checksum_to = Web3.to_checksum_address(body.to_address)
             estimate = SandboxTransactionBuilder.simulate_transaction_sandbox(
                 from_address=current_address,
                 to_address=checksum_to,
@@ -335,7 +367,8 @@ async def send_transaction(
             raise HTTPException(status_code=400, detail="No wallet loaded")
         
         current_address = wallet_manager.current_wallet.address
-        checksum_to = web3_manager.to_checksum_address(body.to_address)
+        from web3 import Web3
+        checksum_to = Web3.to_checksum_address(body.to_address)
         
         # PHASE 3: Rule Enforcement - Check transaction against rules
         if not skip_rules:
@@ -349,6 +382,16 @@ async def send_transaction(
             
             # If transaction is denied by rules
             if not rule_result["allowed"]:
+                # Log blocked transaction
+                audit_logger.log_event("TX_BLOCKED", {
+                    "from": current_address,
+                    "to": checksum_to,
+                    "value": body.value,
+                    "risk_level": rule_result["risk_level"],
+                    "failed_rules": rule_result["failed_rules"],
+                    "reasons": rule_result["reasons"]
+                })
+                
                 return {
                     "message": "Transaction blocked by rules",
                     "status": "blocked",
@@ -419,13 +462,11 @@ async def send_transaction(
         value_wei = web3_manager.ether_to_wei(body.value)
         
         # Build transaction
-        transaction = await transaction_builder.build_native_transfer(
+        transaction = transaction_builder.build_transaction(
             from_address=current_address,
             to_address=checksum_to,
-            amount=body.value,
-            gas_limit=body.gas_limit,
-            max_fee_per_gas=body.max_fee_per_gas,
-            max_priority_fee_per_gas=body.max_priority_fee_per_gas
+            value=value_wei,
+            gas_limit=body.gas_limit
         )
         
         # Sign transaction
@@ -436,7 +477,7 @@ async def send_transaction(
         
         # Log to database
         audit_logger.log_transaction(
-            tx_hash=tx_hash.hex(),
+            tx_hash=tx_hash,
             from_address=current_address,
             to_address=checksum_to,
             value=str(body.value),
@@ -446,13 +487,14 @@ async def send_transaction(
         
         # Log event
         audit_logger.log_event("TX_SENT", {
-            "tx_hash": tx_hash.hex(),
+            "tx_hash": tx_hash,
             "from": current_address,
             "to": checksum_to,
             "value": body.value
         })
         
-        explorer_url = f"{web3_manager.network_info.get('explorer')}/tx/{tx_hash}"
+        network_info = web3_manager.get_network_info()
+        explorer_url = f"{network_info.get('explorer', 'https://polygonscan.com')}/tx/{tx_hash}"
         
         return {
             "tx_hash": tx_hash,

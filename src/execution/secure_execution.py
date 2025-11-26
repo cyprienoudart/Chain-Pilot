@@ -71,6 +71,72 @@ class WalletManager:
         )
         return base64.urlsafe_b64encode(kdf.derive(password.encode()))
     
+    def import_wallet(self, wallet_name: str, private_key: str) -> Dict[str, Any]:
+        """
+        Import an existing wallet from private key
+        
+        Args:
+            wallet_name: Name for the imported wallet
+            private_key: Private key (with or without 0x prefix)
+            
+        Returns:
+            dict: Wallet information (without private key)
+        """
+        try:
+            logger.info(f"Importing wallet: {wallet_name}")
+            
+            # Clean private key (remove 0x if present)
+            if private_key.startswith('0x'):
+                private_key = private_key[2:]
+            
+            # Create account from private key
+            account = Account.from_key(private_key)
+            
+            # Generate salt for encryption
+            salt = os.urandom(16)
+            
+            # Derive encryption key
+            encryption_key = self._derive_key(self.master_password, salt)
+            cipher = Fernet(encryption_key)
+            
+            # Encrypt private key
+            encrypted_key = cipher.encrypt(('0x' + private_key).encode())
+            
+            # Prepare wallet data
+            wallet_data = {
+                "address": account.address,
+                "encrypted_private_key": encrypted_key.decode(),
+                "salt": base64.b64encode(salt).decode(),
+                "version": "1.0"
+            }
+            
+            # Save to file
+            wallet_path = self.wallet_dir / f"{wallet_name}.json"
+            with open(wallet_path, 'w') as f:
+                json.dump(wallet_data, f, indent=2)
+            
+            # Set as current wallet
+            self.current_wallet = account
+            
+            logger.info(f"Wallet imported successfully: {account.address}")
+            
+            # Get network info
+            try:
+                network_info = self.web3_manager.get_network_info()
+                network_name = network_info.get('name', 'Unknown')
+            except:
+                network_name = 'Unknown'
+            
+            return {
+                "wallet_name": wallet_name,
+                "address": account.address,
+                "network": network_name,
+                "wallet_path": str(wallet_path)
+            }
+        except Exception as e:
+            logger.error(f"Failed to import wallet: {e}")
+            raise ValueError(f"Wallet import failed: {str(e)}")
+    
     def create_wallet(self, wallet_name: str = "default") -> Dict[str, Any]:
         """
         Create a new wallet with encrypted private key storage

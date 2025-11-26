@@ -19,6 +19,13 @@
     --gray-800: #262626;
     --gray-900: #171717;
     
+    --success-green: #10B981;
+    --success-light: #D1FAE5;
+    --success-dark: #065F46;
+    --danger-red: #EF4444;
+    --danger-light: #FEE2E2;
+    --danger-dark: #991B1B;
+    
     --spacing-xs: 4px;
     --spacing-sm: 8px;
     --spacing-md: 16px;
@@ -209,10 +216,13 @@ body {
 /* Charts */
 .charts-row {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
     gap: var(--spacing-md);
     margin-bottom: var(--spacing-xl);
 }
+
+
+
 
 .chart-card {
     background: var(--white);
@@ -569,17 +579,35 @@ body {
 
 /* Status Badge */
 .status-confirmed {
-    color: var(--black);
-    font-weight: 500;
+    color: var(--success-green);
+    font-weight: 600;
 }
 
 .status-pending {
     color: var(--gray-500);
+    font-weight: 500;
 }
 
 .status-failed {
     color: var(--gray-400);
     text-decoration: line-through;
+}
+
+.status-blocked,
+.status-denied {
+    color: var(--danger-red);
+    font-weight: 700;
+    background: var(--danger-light);
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+.blocked-row {
+    background: var(--danger-light) !important;
+}
+
+.blocked-row:hover {
+    background: #FEE2E2 !important;
 }
 
 /* Enhanced Rule Card */
@@ -848,6 +876,8 @@ body {
 }
 
 /* Notification System */
+/* COMMENTED OUT: Notification System */
+/*
 .notification {
     position: fixed;
     top: -100px;
@@ -880,6 +910,7 @@ body {
     border-left-color: var(--gray-400);
     background: white;
 }
+*/
 
 /* Responsive */
 @media (max-width: 768px) {
@@ -901,5 +932,320 @@ body {
     
     .charts-row {
         grid-template-columns: 1fr;
+    }
+}
+
+/* Wallet Connection Banner */
+.wallet-connection-banner {
+    background: linear-gradient(135deg, #000000 0%, #2D2D2D 100%);
+    color: white;
+    border-radius: 12px;
+    padding: var(--spacing-xl);
+    margin-bottom: var(--spacing-xl);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.wallet-connection-banner.hidden {
+    display: none;
+}
+
+.banner-content {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-lg);
+}
+
+.banner-icon {
+    font-size: 48px;
+}
+
+.banner-text h3 {
+    margin: 0 0 var(--spacing-xs) 0;
+    font-size: 20px;
+}
+
+.banner-text p {
+    margin: 0;
+    opacity: 0.9;
+    font-size: 14px;
+}
+
+.banner-content .btn {
+    margin-left: auto;
+    white-space: nowrap;
+}
+
+/* Active Rules Summary */
+.active-rules-summary {
+    background: #F5F5F5;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+}
+
+.active-rules-summary h3 {
+    margin: 0 0 var(--spacing-md) 0;
+    font-size: 18px;
+    color: var(--text-primary);
+}
+
+.active-rules-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.active-rule-item {
+    background: white;
+    border: 1px solid var(--border-color);
+    border-left: 4px solid #000000;
+    border-radius: 6px;
+    padding: var(--spacing-md);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.active-rule-item .rule-info {
+    flex: 1;
+}
+
+.active-rule-item .rule-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.active-rule-item .rule-details {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.active-rule-item .rule-badge {
+    background: #000000;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+/* Wallet Info */
+.wallet-info {
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-xl);
+}
+
+/* Add spacing between sections */
+.section-card + .section-card {
+    margin-top: 30px;
+}
+
+.wallet-info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-sm) 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.wallet-info-item:last-child {
+    border-bottom: none;
+}
+
+.wallet-info-label {
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.wallet-info-value {
+    font-family: 'Courier New', monospace;
+    color: var(--text-primary);
+    font-size: 14px;
+}
+
+/* Chat Message Styles */
+.chat-message {
+    display: flex;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
+    padding: var(--spacing-sm);
+}
+
+.chat-message.user {
+    justify-content: flex-end;
+}
+
+.chat-message.bot {
+    justify-content: flex-start;
+}
+
+.chat-message.error {
+    background-color: #FFF0F0;
+}
+
+.chat-message.loading {
+    opacity: 0.7;
+}
+
+.message-avatar {
+    font-size: 24px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.chat-message .message-content {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: var(--spacing-sm) var(--spacing-md);
+    max-width: 70%;
+}
+
+.chat-message.user .message-content {
+    background: var(--text-primary);
+    color: white;
+}
+
+.chat-message .message-content p {
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* Transaction Status Display - MAIN FOCUS */
+.transaction-status-display {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-xl);
+    margin-bottom: var(--spacing-xl);
+}
+
+.status-card {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    text-align: center;
+    box-shadow: var(--shadow-lg);
+    border: 3px solid transparent;
+    transition: all 0.3s ease;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.status-card.success-card {
+    border-color: var(--success-green);
+    background: linear-gradient(135deg, var(--white) 0%, var(--success-light) 100%);
+}
+
+.status-card.blocked-card {
+    border-color: var(--danger-red);
+    background: linear-gradient(135deg, var(--white) 0%, var(--danger-light) 100%);
+}
+
+.status-icon {
+    font-size: 4rem;
+    margin-bottom: var(--spacing-md);
+}
+
+.status-number {
+    font-size: 5rem;
+    font-weight: 700;
+    margin-bottom: var(--spacing-sm);
+}
+
+.success-card .status-number {
+    color: var(--success-dark);
+}
+
+.blocked-card .status-number {
+    color: var(--danger-dark);
+}
+
+.status-label {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: var(--spacing-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.success-card .status-label {
+    color: var(--success-dark);
+}
+
+.blocked-card .status-label {
+    color: var(--danger-dark);
+}
+
+.status-detail {
+    font-size: 0.9rem;
+    color: var(--gray-600);
+}
+
+.status-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+/* Restrictions Summary */
+.restrictions-summary {
+    margin-bottom: var(--spacing-xl);
+}
+
+.restrictions-summary h3 {
+    margin-bottom: var(--spacing-lg);
+    font-size: 1.25rem;
+}
+
+.restrictions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-md);
+}
+
+.restriction-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: var(--gray-100);
+    border-radius: var(--radius-md);
+    border-left: 4px solid var(--gray-800);
+}
+
+.restriction-icon {
+    font-size: 2rem;
+}
+
+.restriction-text {
+    flex: 1;
+}
+
+.restriction-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--gray-900);
+}
+
+.restriction-value {
+    font-size: 0.85rem;
+    color: var(--gray-600);
+    margin-top: 2px;
+}
+
+/* Animations */
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
     }
 }

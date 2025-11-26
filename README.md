@@ -30,8 +30,10 @@
 - **Multi-Wallet Support**: Create and manage multiple wallets with easy switching
 - **Balance Queries**: Real-time balance checks for native tokens and ERC-20
 - **Transaction History**: Complete audit trail of all transactions
-- **Network Support**: Compatible with Ethereum, Polygon, Sepolia testnet, and more
+- **Network Support**: Compatible with Ethereum, Polygon, Arbitrum, Optimism, Base, and all EVM-compatible chains
 - **Sandbox Mode**: Test transactions without real blockchain interaction
+
+**Note**: ChainPilot supports Ethereum and EVM-compatible blockchains only. Bitcoin, Solana, and other non-EVM chains are not supported.
 
 ### 🛡️ **Rule & Risk Engine**
 - **Spending Limits**: Per-transaction, daily, weekly, and monthly limits

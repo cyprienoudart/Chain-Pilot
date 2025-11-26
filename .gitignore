@@ -42,6 +42,7 @@ env/
 wallets/
 *.key
 *.pem
+YOUR_DEMO_GUIDE.md
 
 # Logs
 *.log
