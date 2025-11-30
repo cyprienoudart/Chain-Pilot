@@ -10,7 +10,7 @@
 >
 > Developed during the **ASES Stanford Program** bootcamp.
 > * **3rd Place** out of 75 groups from top French schools.
-> * Ranked in the **Top 1%%** of 300 participants in the competition hosted by **Stanford and HEC**.
+> * Ranked in the **Top 1%** of 300 participants in the competition hosted by **Stanford and HEC**.
 >
 >
 **ChainPilot** is a secure, AI-powered gateway for managing cryptocurrency transactions with automated safety controls, real-time monitoring, and intelligent risk management. It acts as a secure bridge between AI agents and blockchain operations, ensuring controlled and auditable interactions with crypto financial systems.
